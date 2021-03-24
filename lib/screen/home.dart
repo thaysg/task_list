@@ -87,9 +87,28 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Widget buildItem(context, index) {
+  Future<Null> _refresh() async {
+    await Future.delayed(Duration(seconds: 1));
+
+    setState(() {
+      toDoList.sort((a, b) {
+        if (a["OK"] && !b["OK"])
+          return 1;
+        else if (!a["OK"] && b["OK"])
+          return -1;
+        else
+          return 0;
+      });
+      saveData();
+    });
+    return null;
+  }
+
+  Widget buildItem(BuildContext context, int index) {
     return Dismissible(
-      key: Key(index.toString()),
+      key: Key(DateTime.now()
+          .millisecondsSinceEpoch
+          .toString() /* index.toString() */),
       background: Container(
         color: Colors.red,
         child: Align(
@@ -125,8 +144,17 @@ class _HomeScreenState extends State<HomeScreen> {
             title: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    '$index',
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Text(
                     toDoList[index]["title"],
                     style: TextStyle(
@@ -158,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           final snack = SnackBar(
             content: Text(
-              'Tarefa $lastRemoved["title"] removida',
+              'Tarefa ${lastRemoved["title"]} removida',
             ),
             action: SnackBarAction(
                 label: 'Desfazer',
@@ -172,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
               seconds: 5,
             ),
           );
-
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(snack);
         });
       },
@@ -198,9 +226,12 @@ class _HomeScreenState extends State<HomeScreen> {
           horizontal: 12,
           vertical: 12,
         ),
-        child: ListView.builder(
-          itemCount: toDoList.length,
-          itemBuilder: buildItem,
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView.builder(
+            itemCount: toDoList.length,
+            itemBuilder: buildItem,
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
